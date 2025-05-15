@@ -2,7 +2,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Product, CartItem, Transaction, PaymentMethod } from "@/types/pos";
 import { generateId } from "@/utils/gameUtils";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { useGameZone } from "@/context/GameZoneContext";
 
 interface POSContextType {
   products: Product[];
@@ -15,7 +16,11 @@ interface POSContextType {
   removeFromCart: (productId: string) => void;
   updateCartItemQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
-  processTransaction: (paymentMethod: PaymentMethod) => void;
+  processTransaction: (paymentMethod: PaymentMethod, customerName?: string) => void;
+  getTransactionsByDate: (date: Date) => Transaction[];
+  getTransactionsByDateRange: (startDate: Date, endDate: Date) => Transaction[];
+  getTotalSalesByDevice: (deviceId?: string) => number;
+  getTotalHoursByDevice: (deviceId?: string) => number;
 }
 
 export const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -49,6 +54,7 @@ export const POSProvider: React.FC<{children: React.ReactNode}> = ({ children })
   });
 
   const { toast } = useToast();
+  const { devices } = useGameZone();
   
   // Save to local storage when state changes
   useEffect(() => {
@@ -154,7 +160,7 @@ export const POSProvider: React.FC<{children: React.ReactNode}> = ({ children })
     setCart([]);
   };
   
-  const processTransaction = (paymentMethod: PaymentMethod) => {
+  const processTransaction = (paymentMethod: PaymentMethod, customerName?: string) => {
     if (cart.length === 0) {
       toast({
         title: "Empty Cart",
@@ -172,6 +178,7 @@ export const POSProvider: React.FC<{children: React.ReactNode}> = ({ children })
       total,
       paymentMethod,
       timestamp: new Date(),
+      customerName: customerName || undefined,
     };
     
     setTransactions(prev => [...prev, transaction]);
@@ -197,6 +204,88 @@ export const POSProvider: React.FC<{children: React.ReactNode}> = ({ children })
       description: `Transaction of $${total.toFixed(2)} processed successfully.`,
     });
   };
+
+  // New utility functions for reporting
+  const getTransactionsByDate = (date: Date) => {
+    const targetDate = new Date(date);
+    targetDate.setHours(0, 0, 0, 0);
+    const nextDay = new Date(targetDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    
+    return transactions.filter(transaction => {
+      const txDate = new Date(transaction.timestamp);
+      return txDate >= targetDate && txDate < nextDay;
+    });
+  };
+  
+  const getTransactionsByDateRange = (startDate: Date, endDate: Date) => {
+    const startDateObj = new Date(startDate);
+    startDateObj.setHours(0, 0, 0, 0);
+    
+    const endDateObj = new Date(endDate);
+    endDateObj.setHours(23, 59, 59, 999);
+    
+    return transactions.filter(transaction => {
+      const txDate = new Date(transaction.timestamp);
+      return txDate >= startDateObj && txDate <= endDateObj;
+    });
+  };
+  
+  const getTotalSalesByDevice = (deviceId?: string) => {
+    return transactions.reduce((total, transaction) => {
+      // If deviceId is specified, only include transactions for that device
+      if (deviceId) {
+        const deviceTransactions = transaction.items.filter(
+          item => item.product.category === 'gameTime' && item.product.deviceId === deviceId
+        );
+        
+        return total + deviceTransactions.reduce(
+          (sum, item) => sum + (item.product.price * item.quantity), 0
+        );
+      } else {
+        // Include all gameTime transactions
+        const gameTimeTransactions = transaction.items.filter(
+          item => item.product.category === 'gameTime'
+        );
+        
+        return total + gameTimeTransactions.reduce(
+          (sum, item) => sum + (item.product.price * item.quantity), 0
+        );
+      }
+    }, 0);
+  };
+  
+  const getTotalHoursByDevice = (deviceId?: string) => {
+    return transactions.reduce((totalHours, transaction) => {
+      // Filter items for gameTime category and matching deviceId if specified
+      const relevantItems = transaction.items.filter(item => 
+        item.product.category === 'gameTime' && 
+        (!deviceId || item.product.deviceId === deviceId)
+      );
+      
+      // Sum up the hours
+      const hours = relevantItems.reduce((sum, item) => {
+        // Extract duration from product name or use a default conversion
+        // Assuming product name format like "1 Hour Game Time"
+        const durationMatch = item.product.name.match(/(\d+)\s*(Hour|Minute)/i);
+        let durationHours = 0;
+        
+        if (durationMatch) {
+          const value = parseInt(durationMatch[1], 10);
+          const unit = durationMatch[2].toLowerCase();
+          
+          durationHours = unit === 'hour' ? value : value / 60;
+        } else if (item.product.duration) {
+          // If product has duration property (in minutes), convert to hours
+          durationHours = item.product.duration / 60;
+        }
+        
+        return sum + (durationHours * item.quantity);
+      }, 0);
+      
+      return totalHours + hours;
+    }, 0);
+  };
   
   const contextValue: POSContextType = {
     products,
@@ -209,7 +298,11 @@ export const POSProvider: React.FC<{children: React.ReactNode}> = ({ children })
     removeFromCart,
     updateCartItemQuantity,
     clearCart,
-    processTransaction
+    processTransaction,
+    getTransactionsByDate,
+    getTransactionsByDateRange,
+    getTotalSalesByDevice,
+    getTotalHoursByDevice
   };
   
   return (
@@ -219,46 +312,40 @@ export const POSProvider: React.FC<{children: React.ReactNode}> = ({ children })
   );
 };
 
-// Sample products for initial setup
+// Sample game time products for initial setup
 function getSampleProducts(): Product[] {
   return [
     {
       id: "p1",
-      name: "1 Hour Game Time",
-      price: 10.0,
+      name: "30 Minutes Game Time",
+      price: 5.0,
       category: "gameTime",
-      description: "1 hour of gameplay on any available device"
+      description: "30 minutes of gameplay on any available device",
+      duration: 30
     },
     {
       id: "p2",
-      name: "2 Hour Game Time",
-      price: 18.0,
+      name: "1 Hour Game Time",
+      price: 10.0,
       category: "gameTime",
-      description: "2 hours of gameplay on any available device"
+      description: "1 hour of gameplay on any available device",
+      duration: 60
     },
     {
       id: "p3",
-      name: "Gaming T-Shirt",
-      price: 24.99,
-      category: "merchandise",
-      stock: 15,
-      description: "Cool gaming-themed t-shirt"
+      name: "2 Hours Game Time",
+      price: 18.0,
+      category: "gameTime",
+      description: "2 hours of gameplay on any available device",
+      duration: 120
     },
     {
       id: "p4",
-      name: "Soda",
-      price: 2.50,
-      category: "drink",
-      stock: 50,
-      description: "Refreshing beverage"
-    },
-    {
-      id: "p5",
-      name: "Chips",
-      price: 1.99,
-      category: "food",
-      stock: 30,
-      description: "Tasty snack"
+      name: "All-Day Pass",
+      price: 35.0,
+      category: "gameTime",
+      description: "Unlimited gameplay from open until close",
+      duration: 720 // Assuming 12 hours of operation
     }
   ];
 }

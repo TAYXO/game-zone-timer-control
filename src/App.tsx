@@ -11,6 +11,7 @@ import DevicesPage from "./pages/DevicesPage";
 import LogsPage from "./pages/LogsPage";
 import POSPage from "./pages/POSPage";
 import TransactionsPage from "./pages/TransactionsPage";
+import SalesSummaryPage from "./pages/SalesSummaryPage";
 import NotFound from "./pages/NotFound";
 import Navbar from "./components/Navbar";
 
@@ -31,6 +32,7 @@ const App = () => (
                 <Route path="/logs" element={<LogsPage />} />
                 <Route path="/pos" element={<POSPage />} />
                 <Route path="/transactions" element={<TransactionsPage />} />
+                <Route path="/sales-summary" element={<SalesSummaryPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </div>

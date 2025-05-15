@@ -1,7 +1,7 @@
 
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { ShoppingCart, Package } from 'lucide-react';
+import { ShoppingCart, Package, ChartBar } from 'lucide-react';
 
 const Navbar = () => {
   const location = useLocation();
@@ -13,6 +13,7 @@ const Navbar = () => {
     { name: 'Usage Logs', path: '/logs', icon: 'clock' },
     { name: 'POS', path: '/pos', icon: 'shopping-cart' },
     { name: 'Transactions', path: '/transactions', icon: 'receipt' },
+    { name: 'Sales Summary', path: '/sales-summary', icon: 'chart-bar' },
   ];
 
   return (
@@ -22,13 +23,13 @@ const Navbar = () => {
           <span className="text-primary mr-1">Game</span>
           <span>Zone</span>
         </div>
-        <nav className="ml-8 flex space-x-4 lg:space-x-6">
+        <nav className="ml-8 flex space-x-4 lg:space-x-6 overflow-x-auto">
           {links.map((link) => (
             <Link
               key={link.path}
               to={link.path}
               className={cn(
-                "text-sm font-medium transition-colors hover:text-primary flex items-center space-x-1",
+                "text-sm font-medium transition-colors hover:text-primary flex items-center space-x-1 whitespace-nowrap",
                 isActive(link.path) 
                   ? "text-foreground" 
                   : "text-muted-foreground"
@@ -36,7 +37,8 @@ const Navbar = () => {
             >
               {link.icon === 'shopping-cart' && <ShoppingCart className="h-4 w-4" />}
               {link.icon === 'receipt' && <Package className="h-4 w-4" />}
-              {link.icon !== 'shopping-cart' && link.icon !== 'receipt' && (
+              {link.icon === 'chart-bar' && <ChartBar className="h-4 w-4" />}
+              {link.icon !== 'shopping-cart' && link.icon !== 'receipt' && link.icon !== 'chart-bar' && (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
