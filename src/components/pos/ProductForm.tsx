@@ -18,7 +18,8 @@ const productSchema = z.object({
   price: z.coerce.number().min(0, "Price must be a positive number"),
   category: z.enum(["gameTime", "merchandise", "food", "drink"]),
   description: z.string().optional(),
-  stock: z.coerce.number().int().optional()
+  stock: z.coerce.number().int().optional(),
+  duration: z.coerce.number().int().optional()
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -43,26 +44,36 @@ const ProductForm: React.FC<ProductFormProps> = ({
           price: existingProduct.price,
           category: existingProduct.category,
           description: existingProduct.description || "",
-          stock: existingProduct.stock
+          stock: existingProduct.stock,
+          duration: existingProduct.duration
         }
       : {
           name: "",
           price: 0,
-          category: "merchandise",
+          category: "gameTime",
           description: "",
-          stock: undefined
+          stock: undefined,
+          duration: undefined
         }
   });
 
   const onSubmit = (data: ProductFormValues) => {
     if (existingProduct) {
       editProduct({
+        ...existingProduct,
         ...data,
-        id: existingProduct.id,
-        imageUrl: existingProduct.imageUrl
       });
     } else {
-      addProduct(data);
+      // Make sure all required fields are present
+      const newProduct: Omit<Product, "id"> = {
+        name: data.name,
+        price: data.price,
+        category: data.category,
+        description: data.description,
+        stock: data.stock,
+        duration: data.duration
+      };
+      addProduct(newProduct);
     }
     onClose();
   };
@@ -166,6 +177,28 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 </FormItem>
               )}
             />
+            
+            {form.watch('category') === 'gameTime' && (
+              <FormField
+                control={form.control}
+                name="duration"
+                render={({ field: { value, onChange, ...field } }) => (
+                  <FormItem>
+                    <FormLabel>Duration (minutes)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="Duration in minutes" 
+                        {...field}
+                        value={value === undefined ? "" : value}
+                        onChange={e => onChange(e.target.value ? Number(e.target.value) : undefined)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>
