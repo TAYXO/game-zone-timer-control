@@ -20,6 +20,18 @@ import {
 import { GameDevice } from "@/types/models";
 import { useToast } from "@/components/ui/use-toast";
 import { useGameZone } from "@/context/GameZoneContext";
+import { Trash2 } from "lucide-react";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface DeviceFormProps {
   open: boolean;
@@ -38,8 +50,9 @@ const DeviceForm: React.FC<DeviceFormProps> = ({
   const [timerDefault, setTimerDefault] = React.useState(
     editDevice?.timerDefault.toString() || "30"
   );
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   
-  const { addDevice, editDevice: updateDevice } = useGameZone();
+  const { addDevice, editDevice: updateDevice, deleteDevice } = useGameZone();
   const { toast } = useToast();
   
   React.useEffect(() => {
@@ -83,6 +96,13 @@ const DeviceForm: React.FC<DeviceFormProps> = ({
     }
     
     onOpenChange(false);
+  };
+  
+  const handleDeleteDevice = () => {
+    if (editDevice) {
+      deleteDevice(editDevice.id);
+      onOpenChange(false);
+    }
   };
   
   const deviceTypes = [
@@ -165,17 +185,49 @@ const DeviceForm: React.FC<DeviceFormProps> = ({
             </div>
           </div>
           
-          <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit">
-              {editDevice ? "Save Changes" : "Add Device"}
-            </Button>
+          <DialogFooter className="flex justify-between">
+            <div>
+              {editDevice && (
+                <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      type="button" 
+                      variant="destructive"
+                      size="sm"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" /> Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the device
+                        and remove it from our servers.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteDevice}>
+                        Continue
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">
+                {editDevice ? "Save Changes" : "Add Device"}
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

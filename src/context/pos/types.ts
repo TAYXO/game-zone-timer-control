@@ -5,7 +5,7 @@ export interface POSContextType {
   products: Product[];
   cart: CartItem[];
   transactions: Transaction[];
-  addProduct: (product: Omit<Product, "id">) => void;
+  addProduct: (product: Omit<Product, "id">) => Promise<Product | undefined>;
   editProduct: (product: Product) => void;
   deleteProduct: (productId: string) => void;
   addToCart: (product: Product, quantity?: number) => void;
@@ -17,4 +17,5 @@ export interface POSContextType {
   getTransactionsByDateRange: (startDate: Date, endDate: Date) => Transaction[];
   getTotalSalesByDevice: (deviceId?: string) => number;
   getTotalHoursByDevice: (deviceId?: string) => number;
+  loading: boolean;
 }

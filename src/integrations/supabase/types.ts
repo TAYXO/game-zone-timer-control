@@ -9,7 +9,102 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      game_devices: {
+        Row: {
+          created_at: string | null
+          device_id: string | null
+          id: string
+          name: string
+          status: string
+          timer_default: number
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          device_id?: string | null
+          id?: string
+          name: string
+          status?: string
+          timer_default?: number
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          device_id?: string | null
+          id?: string
+          name?: string
+          status?: string
+          timer_default?: number
+          type?: string
+        }
+        Relationships: []
+      }
+      pos_products: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          device_id: string | null
+          duration: number | null
+          id: string
+          name: string
+          price: number
+          stock: number | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          device_id?: string | null
+          duration?: number | null
+          id?: string
+          name: string
+          price: number
+          stock?: number | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          device_id?: string | null
+          duration?: number | null
+          id?: string
+          name?: string
+          price?: number
+          stock?: number | null
+        }
+        Relationships: []
+      }
+      pos_transactions: {
+        Row: {
+          customer_name: string | null
+          device_id: string | null
+          id: string
+          items: Json
+          payment_method: string
+          timestamp: string | null
+          total: number
+        }
+        Insert: {
+          customer_name?: string | null
+          device_id?: string | null
+          id?: string
+          items: Json
+          payment_method: string
+          timestamp?: string | null
+          total: number
+        }
+        Update: {
+          customer_name?: string | null
+          device_id?: string | null
+          id?: string
+          items?: Json
+          payment_method?: string
+          timestamp?: string | null
+          total?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -16,9 +16,16 @@ import { useGameZone } from "@/context/GameZoneContext";
 import { usePOS } from "@/context/POSContext";
 import { formatTime, getStatusClass } from "@/utils/gameUtils";
 import TimerControls from "./TimerControls";
-import { Play, Pause, Square, Clock, DollarSign } from "lucide-react";
+import { Play, Pause, Square, Clock, DollarSign, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface DeviceCardProps {
   device: GameDevice;
@@ -35,7 +42,7 @@ const DeviceCard: React.FC<DeviceCardProps> = ({ device, onEdit }) => {
     extendSession 
   } = useGameZone();
   
-  const { products, addToCart, processTransaction } = usePOS();
+  const { products, addProduct, addToCart, processTransaction } = usePOS();
   
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [showExtendDialog, setShowExtendDialog] = useState(false);
@@ -43,6 +50,9 @@ const DeviceCard: React.FC<DeviceCardProps> = ({ device, onEdit }) => {
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [customerName, setCustomerName] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'mobile'>('cash');
+  const [customDuration, setCustomDuration] = useState<number>(30);
+  const [customPrice, setCustomPrice] = useState<number>(5);
+  const [selectedTab, setSelectedTab] = useState<string>("packages");
   
   const session = activeSessions.find(s => s.deviceId === device.id);
   const gameTimeProducts = products.filter(p => p.category === 'gameTime');
@@ -70,25 +80,46 @@ const DeviceCard: React.FC<DeviceCardProps> = ({ device, onEdit }) => {
   }, [session]);
   
   const handleStart = (minutes: number) => {
-    if (!selectedProduct) {
+    if (selectedTab === "packages" && !selectedProduct) {
       setShowPaymentDialog(true);
       return;
     }
     
-    // Process the transaction first
-    const product = products.find(p => p.id === selectedProduct);
-    if (product) {
-      addToCart(product);
-      processTransaction(paymentMethod, customerName || undefined);
+    if (selectedTab === "custom") {
+      // Create a custom product
+      const customProductData = {
+        name: `${customDuration} Minutes - Custom`,
+        price: customPrice,
+        category: 'gameTime' as const,
+        deviceId: device.id,
+        duration: customDuration
+      };
       
-      // Then start the session
-      startSession(device.id, product.duration || minutes);
-      
-      // Reset dialog states
-      setSelectedProduct("");
-      setCustomerName("");
-      setShowPaymentDialog(false);
+      // Add to products
+      addProduct(customProductData).then((newProduct) => {
+        if (newProduct) {
+          addToCart(newProduct);
+          processTransaction(paymentMethod, customerName || undefined);
+          startSession(device.id, customDuration);
+        }
+      });
+    } else {
+      // Process selected product
+      const product = products.find(p => p.id === selectedProduct);
+      if (product) {
+        addToCart(product);
+        processTransaction(paymentMethod, customerName || undefined);
+        startSession(device.id, product.duration || minutes);
+      }
     }
+    
+    // Reset dialog states
+    setSelectedProduct("");
+    setCustomDuration(30);
+    setCustomPrice(5);
+    setCustomerName("");
+    setSelectedTab("packages");
+    setShowPaymentDialog(false);
   };
   
   const handleStop = () => {
@@ -104,35 +135,79 @@ const DeviceCard: React.FC<DeviceCardProps> = ({ device, onEdit }) => {
   };
   
   const handleExtend = (minutes: number) => {
-    // Find appropriate product for extension
-    const extensionProduct = gameTimeProducts.find(p => p.duration === minutes);
-    
-    if (extensionProduct) {
-      addToCart(extensionProduct);
-      processTransaction(paymentMethod, customerName || undefined);
-      extendSession(device.id, minutes);
+    if (selectedTab === "custom") {
+      // Create a custom product for extension
+      const customProductData = {
+        name: `${customDuration} Minutes Extension - Custom`,
+        price: customPrice,
+        category: 'gameTime' as const,
+        deviceId: device.id,
+        duration: customDuration
+      };
+      
+      // Add to products
+      addProduct(customProductData).then((newProduct) => {
+        if (newProduct) {
+          addToCart(newProduct);
+          processTransaction(paymentMethod, customerName || undefined);
+          extendSession(device.id, customDuration);
+        }
+      });
     } else {
-      // Just extend the session if no matching product
-      extendSession(device.id, minutes);
+      // Find appropriate product for extension
+      const extensionProduct = gameTimeProducts.find(p => p.id === selectedProduct);
+      
+      if (extensionProduct) {
+        addToCart(extensionProduct);
+        processTransaction(paymentMethod, customerName || undefined);
+        extendSession(device.id, extensionProduct.duration || minutes);
+      } else if (minutes > 0) {
+        // Just extend the session if no matching product but minutes provided
+        extendSession(device.id, minutes);
+      }
     }
     
     setShowExtendDialog(false);
+    setSelectedTab("packages");
+    setSelectedProduct("");
+    setCustomDuration(30);
+    setCustomPrice(5);
   };
   
   const handlePaymentSubmit = () => {
-    const product = products.find(p => p.id === selectedProduct);
-    if (product) {
-      addToCart(product);
-      processTransaction(paymentMethod, customerName || undefined);
+    if (selectedTab === "custom") {
+      // Create a custom product
+      const customProductData = {
+        name: `${customDuration} Minutes - Custom`,
+        price: customPrice,
+        category: 'gameTime' as const,
+        deviceId: device.id,
+        duration: customDuration
+      };
+      
+      // Add to products
+      addProduct(customProductData);
       
       // Start the session
-      startSession(device.id, product.duration || 30); // Default to 30 min if no duration
-      
-      // Reset dialog states
-      setSelectedProduct("");
-      setCustomerName("");
-      setShowPaymentDialog(false);
+      startSession(device.id, customDuration);
+    } else {
+      const product = products.find(p => p.id === selectedProduct);
+      if (product) {
+        addToCart(product);
+        processTransaction(paymentMethod, customerName || undefined);
+        
+        // Start the session
+        startSession(device.id, product.duration || 30);
+      }
     }
+    
+    // Reset dialog states
+    setSelectedProduct("");
+    setCustomDuration(30);
+    setCustomPrice(5);
+    setCustomerName("");
+    setSelectedTab("packages");
+    setShowPaymentDialog(false);
   };
   
   const isActive = !!session;
@@ -202,63 +277,98 @@ const DeviceCard: React.FC<DeviceCardProps> = ({ device, onEdit }) => {
                     <DialogTitle>Add time to session</DialogTitle>
                   </DialogHeader>
                   
-                  <div className="space-y-4 py-4">
-                    <div>
-                      <label className="text-sm font-medium">Select time package:</label>
-                      <Select 
-                        value={selectedProduct} 
-                        onValueChange={setSelectedProduct}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a package" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {gameTimeProducts.map((product) => (
-                            <SelectItem key={product.id} value={product.id}>
-                              {product.name} - ${product.price.toFixed(2)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <Tabs 
+                    defaultValue="packages" 
+                    value={selectedTab} 
+                    onValueChange={setSelectedTab}
+                    className="w-full"
+                  >
+                    <TabsList className="grid grid-cols-2 mb-4">
+                      <TabsTrigger value="packages">Time Packages</TabsTrigger>
+                      <TabsTrigger value="custom">Custom Price</TabsTrigger>
+                    </TabsList>
                     
-                    <div>
-                      <label className="text-sm font-medium">Customer name (optional):</label>
-                      <Input
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        placeholder="Enter customer name"
-                      />
-                    </div>
+                    <TabsContent value="packages" className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium">Select time package:</label>
+                        <Select 
+                          value={selectedProduct} 
+                          onValueChange={setSelectedProduct}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a package" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {gameTimeProducts.map((product) => (
+                              <SelectItem key={product.id} value={product.id}>
+                                {product.name} - ${product.price.toFixed(2)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </TabsContent>
                     
-                    <div>
-                      <label className="text-sm font-medium">Payment method:</label>
-                      <Select 
-                        value={paymentMethod} 
-                        onValueChange={(value) => setPaymentMethod(value as any)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="cash">Cash</SelectItem>
-                          <SelectItem value="card">Card</SelectItem>
-                          <SelectItem value="mobile">Mobile Payment</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <TabsContent value="custom" className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium">Duration (minutes):</label>
+                        <Input
+                          type="number"
+                          value={customDuration}
+                          onChange={(e) => setCustomDuration(Number(e.target.value))}
+                          min={5}
+                          className="mt-1"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm font-medium">Price ($):</label>
+                        <Input
+                          type="number"
+                          value={customPrice}
+                          onChange={(e) => setCustomPrice(Number(e.target.value))}
+                          min={1}
+                          step={0.01}
+                          className="mt-1"
+                        />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                  
+                  <div>
+                    <label className="text-sm font-medium">Customer name (optional):</label>
+                    <Input
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="Enter customer name"
+                      className="mt-1"
+                    />
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-2">
-                    {[5, 10, 15, 30].map(mins => (
-                      <Button 
-                        key={mins} 
-                        onClick={() => handleExtend(mins)}
-                      >
-                        +{mins} mins
-                      </Button>
-                    ))}
+                  <div>
+                    <label className="text-sm font-medium">Payment method:</label>
+                    <Select 
+                      value={paymentMethod} 
+                      onValueChange={(value) => setPaymentMethod(value as any)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="card">Card</SelectItem>
+                        <SelectItem value="mobile">Mobile Payment</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
+                  
+                  <DialogFooter>
+                    <Button onClick={() => setShowExtendDialog(false)} variant="outline">Cancel</Button>
+                    <Button onClick={() => handleExtend(0)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Time
+                    </Button>
+                  </DialogFooter>
                 </DialogContent>
               </Dialog>
               
@@ -281,26 +391,63 @@ const DeviceCard: React.FC<DeviceCardProps> = ({ device, onEdit }) => {
                   <DialogTitle>Start Gaming Session</DialogTitle>
                 </DialogHeader>
                 
-                <div className="space-y-4 py-4">
-                  <div>
-                    <label className="text-sm font-medium">Select time package:</label>
-                    <Select 
-                      value={selectedProduct} 
-                      onValueChange={setSelectedProduct}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a package" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {gameTimeProducts.map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            {product.name} - ${product.price.toFixed(2)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <Tabs 
+                  defaultValue="packages" 
+                  value={selectedTab} 
+                  onValueChange={setSelectedTab}
+                  className="w-full"
+                >
+                  <TabsList className="grid grid-cols-2 mb-4">
+                    <TabsTrigger value="packages">Time Packages</TabsTrigger>
+                    <TabsTrigger value="custom">Custom Price</TabsTrigger>
+                  </TabsList>
                   
+                  <TabsContent value="packages" className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">Select time package:</label>
+                      <Select 
+                        value={selectedProduct} 
+                        onValueChange={setSelectedProduct}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a package" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {gameTimeProducts.map((product) => (
+                            <SelectItem key={product.id} value={product.id}>
+                              {product.name} - ${product.price.toFixed(2)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="custom" className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">Duration (minutes):</label>
+                      <Input
+                        type="number"
+                        value={customDuration}
+                        onChange={(e) => setCustomDuration(Number(e.target.value))}
+                        min={5}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium">Price ($):</label>
+                      <Input
+                        type="number"
+                        value={customPrice}
+                        onChange={(e) => setCustomPrice(Number(e.target.value))}
+                        min={1}
+                        step={0.01}
+                      />
+                    </div>
+                  </TabsContent>
+                </Tabs>
+                
+                <div className="space-y-4 mt-4">
                   <div>
                     <label className="text-sm font-medium">Customer name (optional):</label>
                     <Input
