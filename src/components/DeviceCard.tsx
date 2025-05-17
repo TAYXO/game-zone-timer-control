@@ -16,7 +16,7 @@ import { useGameZone } from "@/context/GameZoneContext";
 import { usePOS } from "@/context/POSContext";
 import { formatTime, getStatusClass } from "@/utils/gameUtils";
 import TimerControls from "./TimerControls";
-import { Play, Pause, Square, Clock, DollarSign, Plus } from "lucide-react";
+import { Play, Pause, Square, Clock, DollarSign, Plus, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { 
   Select, 
@@ -218,10 +218,22 @@ const DeviceCard: React.FC<DeviceCardProps> = ({ device, onEdit }) => {
       <CardHeader className="pb-2">
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg">{device.name}</CardTitle>
-          <Badge className={getStatusClass(device.status)}>
-            {device.status === "available" ? "Available" : 
-              device.status === "inUse" ? "In Use" : "Out of Service"}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge className={getStatusClass(device.status)}>
+              {device.status === "available" ? "Available" : 
+                device.status === "inUse" ? "In Use" : "Out of Service"}
+            </Badge>
+            {device.status !== "inUse" && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8" 
+                onClick={() => onEdit(device)}
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
         <div className="text-sm text-muted-foreground">
           {device.type}
