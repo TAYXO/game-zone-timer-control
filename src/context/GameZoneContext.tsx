@@ -42,7 +42,16 @@ export const GameZoneProvider: React.FC<{children: React.ReactNode}> = ({ childr
         }
         
         if (data) {
-          setDevices(data as GameDevice[]);
+          // Map database fields to our GameDevice type
+          const mappedDevices: GameDevice[] = data.map(item => ({
+            id: item.id,
+            name: item.name,
+            type: item.type,
+            deviceId: item.device_id,
+            status: item.status as DeviceStatus,
+            timerDefault: item.timer_default
+          }));
+          setDevices(mappedDevices);
         }
       } catch (error: any) {
         console.error("Error loading devices:", error.message);
@@ -62,14 +71,18 @@ export const GameZoneProvider: React.FC<{children: React.ReactNode}> = ({ childr
   // Add a new device
   const addDevice = async (deviceData: Omit<GameDevice, "id" | "status">) => {
     try {
-      const newDevice = {
-        ...deviceData,
+      // Map to database schema
+      const dbDevice = {
+        name: deviceData.name,
+        type: deviceData.type,
+        device_id: deviceData.deviceId,
+        timer_default: deviceData.timerDefault,
         status: "available" as DeviceStatus,
       };
       
       const { data, error } = await supabase
         .from('game_devices')
-        .insert([newDevice])
+        .insert([dbDevice])
         .select();
       
       if (error) {
@@ -77,7 +90,17 @@ export const GameZoneProvider: React.FC<{children: React.ReactNode}> = ({ childr
       }
       
       if (data && data.length > 0) {
-        setDevices(prev => [...prev, data[0] as GameDevice]);
+        // Map database response to our GameDevice type
+        const newDevice: GameDevice = {
+          id: data[0].id,
+          name: data[0].name,
+          type: data[0].type,
+          deviceId: data[0].device_id,
+          status: data[0].status as DeviceStatus,
+          timerDefault: data[0].timer_default
+        };
+        
+        setDevices(prev => [...prev, newDevice]);
         toast({
           title: "Device Added",
           description: `${deviceData.name} has been added successfully.`,
@@ -96,9 +119,19 @@ export const GameZoneProvider: React.FC<{children: React.ReactNode}> = ({ childr
   // Edit an existing device
   const editDevice = async (device: GameDevice) => {
     try {
+      // Map to database schema
+      const dbDevice = {
+        id: device.id,
+        name: device.name,
+        type: device.type,
+        device_id: device.deviceId,
+        status: device.status,
+        timer_default: device.timerDefault
+      };
+      
       const { error } = await supabase
         .from('game_devices')
-        .update(device)
+        .update(dbDevice)
         .eq('id', device.id);
       
       if (error) {

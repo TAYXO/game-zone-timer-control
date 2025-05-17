@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect } from "react";
 import { Product, CartItem, Transaction, PaymentMethod } from "@/types/pos";
 import { generateId } from "@/utils/gameUtils";
@@ -6,6 +7,7 @@ import { useGameZone } from "@/context/GameZoneContext";
 import { POSContextType } from "./types";
 import { getSampleProducts } from "./sampleProducts";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 export const POSContext = createContext<POSContextType | undefined>(undefined);
 
@@ -286,9 +288,12 @@ export const POSProvider: React.FC<{children: React.ReactNode}> = ({ children })
     const total = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
     
     try {
+      // Convert cart items to a JSON-serializable format for Supabase
+      const jsonCompatibleCart = JSON.parse(JSON.stringify(cart));
+      
       // Map to database schema
       const dbTransaction = {
-        items: cart,
+        items: jsonCompatibleCart as Json,
         total: total,
         payment_method: paymentMethod,
         customer_name: customerName,
@@ -306,7 +311,7 @@ export const POSProvider: React.FC<{children: React.ReactNode}> = ({ children })
       if (data && data.length > 0) {
         const transaction: Transaction = {
           id: data[0].id,
-          items: data[0].items,
+          items: JSON.parse(JSON.stringify(data[0].items)) as CartItem[],
           total: Number(data[0].total),
           paymentMethod: data[0].payment_method as PaymentMethod,
           timestamp: new Date(data[0].timestamp),
