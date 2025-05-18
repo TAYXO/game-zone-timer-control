@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { GameDevice, DeviceStatus, GameSession, UsageLog } from "@/types/models";
 import { generateId } from "@/utils/gameUtils";
@@ -17,6 +16,7 @@ interface GameZoneContextType {
   pauseSession: (deviceId: string) => void;
   resumeSession: (deviceId: string) => void;
   extendSession: (deviceId: string, additionalMinutes: number) => void;
+  clearUsageLogs: (deviceId?: string) => void;
   loading: boolean;
 }
 
@@ -383,6 +383,17 @@ export const GameZoneProvider: React.FC<{children: React.ReactNode}> = ({ childr
     });
   };
 
+  // Clear usage logs
+  const clearUsageLogs = (deviceId?: string) => {
+    if (deviceId) {
+      // Clear logs for a specific device
+      setUsageLogs(prev => prev.filter(log => log.deviceId !== deviceId));
+    } else {
+      // Clear all logs
+      setUsageLogs([]);
+    }
+  };
+
   // Helper function to update device status in database
   const updateDeviceStatus = async (deviceId: string, status: DeviceStatus) => {
     try {
@@ -407,6 +418,7 @@ export const GameZoneProvider: React.FC<{children: React.ReactNode}> = ({ childr
     pauseSession,
     resumeSession,
     extendSession,
+    clearUsageLogs,
     loading
   };
 

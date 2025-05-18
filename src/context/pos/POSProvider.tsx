@@ -369,7 +369,34 @@ export const POSProvider: React.FC<{children: React.ReactNode}> = ({ children })
       });
     }
   };
-
+  
+  const deleteTransaction = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('pos_transactions')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      setTransactions(prevTransactions => prevTransactions.filter(transaction => transaction.id !== id));
+      
+      toast({
+        title: "Transaction Deleted",
+        description: "Transaction has been removed successfully.",
+      });
+    } catch (error: any) {
+      console.error("Error deleting transaction:", error.message);
+      toast({
+        title: "Error deleting transaction",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+  
   // Utility functions for reporting
   const getTransactionsByDate = (date: Date) => {
     const targetDate = new Date(date);
@@ -469,6 +496,7 @@ export const POSProvider: React.FC<{children: React.ReactNode}> = ({ children })
     getTransactionsByDateRange,
     getTotalSalesByDevice,
     getTotalHoursByDevice,
+    deleteTransaction,
     loading
   };
   
