@@ -3,6 +3,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { Expense } from "@/types/expenses";
+import { Transaction } from "@/types/pos";
 
 export const generatePDF = async (
   expenses: Expense[],
@@ -115,5 +116,240 @@ export const generatePDF = async (
   }
   
   // Save or open the PDF
+  doc.save(`${filename}.pdf`);
+};
+
+export const generateTransactionPDF = (
+  transactions: Transaction[],
+  filename: string
+): void => {
+  // Create a new PDF document
+  const doc = new jsPDF();
+  
+  // Set document properties
+  const title = "Transaction Report";
+  const dateStr = format(new Date(), "MMMM dd, yyyy");
+  
+  // Add title
+  doc.setFontSize(20);
+  doc.text(title, 14, 22);
+  
+  // Add report generation date
+  doc.setFontSize(10);
+  doc.text(`Generated on: ${dateStr}`, 14, 30);
+  
+  // Add period text if filtered
+  if (transactions.length > 0) {
+    const oldestTransaction = new Date(Math.min(...transactions.map(t => new Date(t.timestamp).getTime())));
+    const newestTransaction = new Date(Math.max(...transactions.map(t => new Date(t.timestamp).getTime())));
+    
+    const periodText = `Period: ${format(oldestTransaction, "MM/dd/yyyy")} - ${format(newestTransaction, "MM/dd/yyyy")}`;
+    doc.text(periodText, 14, 36);
+  }
+  
+  // Add summary information
+  const totalAmount = transactions.reduce((sum, t) => sum + t.total, 0);
+  doc.setFontSize(12);
+  doc.text(`Total Sales: $${totalAmount.toFixed(2)}`, 14, 46);
+  doc.text(`Number of Transactions: ${transactions.length}`, 14, 52);
+  
+  // Create transaction table data
+  const tableData = transactions.map(transaction => [
+    format(new Date(transaction.timestamp), "MM/dd/yyyy HH:mm"),
+    transaction.items.map(item => `${item.quantity}x ${item.product.name}`).join(", "),
+    transaction.paymentMethod,
+    transaction.customerName || "Anonymous",
+    `$${transaction.total.toFixed(2)}`
+  ]);
+  
+  // Add transaction table
+  autoTable(doc, {
+    startY: 60,
+    head: [["Date & Time", "Items", "Payment", "Customer", "Total"]],
+    body: tableData,
+    headStyles: {
+      fillColor: [38, 9, 94], // Dark purple
+      textColor: [255, 255, 255],
+      fontStyle: "bold"
+    },
+    alternateRowStyles: {
+      fillColor: [240, 240, 245]
+    },
+    columnStyles: {
+      0: { cellWidth: 30 }, // Date
+      1: { cellWidth: 60 }, // Items
+      2: { cellWidth: 25 }, // Payment
+      3: { cellWidth: 30 }, // Customer
+      4: { cellWidth: 25 } // Total
+    },
+    margin: { top: 60 }
+  });
+  
+  // Add payment method breakdown
+  const paymentMethods: Record<string, number> = {};
+  transactions.forEach(t => {
+    if (!paymentMethods[t.paymentMethod]) {
+      paymentMethods[t.paymentMethod] = 0;
+    }
+    paymentMethods[t.paymentMethod] += t.total;
+  });
+  
+  // Get Y position after the transaction table
+  const paymentTableY = (doc as any).lastAutoTable.finalY + 20;
+  doc.setFontSize(14);
+  doc.text("Payment Method Breakdown", 14, paymentTableY);
+  
+  const paymentTableData = Object.entries(paymentMethods)
+    .sort((a, b) => b[1] - a[1])
+    .map(([method, amount]) => [
+      method,
+      `$${amount.toFixed(2)}`,
+      `${((amount / totalAmount) * 100).toFixed(2)}%`
+    ]);
+  
+  autoTable(doc, {
+    startY: paymentTableY + 10,
+    head: [["Payment Method", "Amount", "Percentage"]],
+    body: paymentTableData,
+    headStyles: {
+      fillColor: [38, 9, 94],
+      textColor: [255, 255, 255],
+      fontStyle: "bold"
+    }
+  });
+  
+  // Add footer
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.text(`GameZone - Page ${i} of ${pageCount}`, 14, doc.internal.pageSize.height - 10);
+    doc.text(`Generated on ${dateStr}`, doc.internal.pageSize.width - 60, doc.internal.pageSize.height - 10);
+  }
+  
+  // Save the PDF
+  doc.save(`${filename}.pdf`);
+};
+
+export const generateSalesSummaryPDF = (
+  summaryData: {
+    startDate: Date;
+    endDate: Date;
+    totalSales: number;
+    totalTransactions: number;
+    averageTransaction: number;
+    deviceHoursData: Array<{name: string; hours: number; revenue: number}>;
+    paymentMethodData: Array<{name: string; amount: number; count: number}>;
+    transactions: Transaction[];
+  },
+  filename: string
+): void => {
+  // Create a new PDF document
+  const doc = new jsPDF();
+  
+  // Set document properties
+  const title = "Sales Summary Report";
+  const dateRange = `${format(summaryData.startDate, "MMMM dd, yyyy")} - ${format(summaryData.endDate, "MMMM dd, yyyy")}`;
+  
+  // Add title and date range
+  doc.setFontSize(20);
+  doc.text(title, 14, 22);
+  
+  doc.setFontSize(12);
+  doc.text(`Period: ${dateRange}`, 14, 30);
+  doc.text(`Generated on: ${format(new Date(), "MMMM dd, yyyy")}`, 14, 36);
+  
+  // Add summary metrics
+  doc.setFontSize(14);
+  doc.text("Summary Metrics", 14, 46);
+  
+  doc.setFontSize(12);
+  doc.text(`Total Sales: $${summaryData.totalSales.toFixed(2)}`, 20, 56);
+  doc.text(`Number of Transactions: ${summaryData.totalTransactions}`, 20, 62);
+  doc.text(`Average Transaction: $${summaryData.averageTransaction.toFixed(2)}`, 20, 68);
+  
+  // Add device usage table
+  doc.setFontSize(14);
+  doc.text("Device Usage & Revenue", 14, 78);
+  
+  const deviceTableData = summaryData.deviceHoursData.map(device => [
+    device.name,
+    `${device.hours.toFixed(2)} hours`,
+    `$${device.revenue.toFixed(2)}`
+  ]);
+  
+  autoTable(doc, {
+    startY: 82,
+    head: [["Device", "Hours Used", "Revenue"]],
+    body: deviceTableData,
+    headStyles: {
+      fillColor: [38, 9, 94],
+      textColor: [255, 255, 255],
+      fontStyle: "bold"
+    }
+  });
+  
+  // Add payment method breakdown
+  const paymentY = (doc as any).lastAutoTable.finalY + 20;
+  doc.setFontSize(14);
+  doc.text("Payment Method Breakdown", 14, paymentY);
+  
+  const paymentTableData = summaryData.paymentMethodData.map(method => [
+    method.name,
+    `$${method.amount.toFixed(2)}`,
+    `${method.count}`,
+    `$${(method.amount / method.count).toFixed(2)}`
+  ]);
+  
+  autoTable(doc, {
+    startY: paymentY + 4,
+    head: [["Method", "Total Amount", "Count", "Avg per Transaction"]],
+    body: paymentTableData,
+    headStyles: {
+      fillColor: [38, 9, 94],
+      textColor: [255, 255, 255],
+      fontStyle: "bold"
+    }
+  });
+  
+  // Add transaction list (top 10 if too many)
+  const transactionsY = (doc as any).lastAutoTable.finalY + 20;
+  doc.setFontSize(14);
+  const transactionsTitle = summaryData.transactions.length > 10 
+    ? "Recent Transactions (Top 10)" 
+    : "Recent Transactions";
+  doc.text(transactionsTitle, 14, transactionsY);
+  
+  const transactionTableData = summaryData.transactions
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 10)
+    .map(t => [
+      format(new Date(t.timestamp), "MM/dd/yyyy HH:mm"),
+      t.items.map(item => `${item.quantity}x ${item.product.name.substring(0, 15)}`).join(", ").substring(0, 30),
+      t.paymentMethod,
+      `$${t.total.toFixed(2)}`
+    ]);
+  
+  autoTable(doc, {
+    startY: transactionsY + 4,
+    head: [["Date & Time", "Items", "Payment Method", "Total"]],
+    body: transactionTableData,
+    headStyles: {
+      fillColor: [38, 9, 94],
+      textColor: [255, 255, 255],
+      fontStyle: "bold"
+    }
+  });
+  
+  // Add footer
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.text(`GameZone - Page ${i} of ${pageCount}`, 14, doc.internal.pageSize.height - 10);
+    doc.text(`Generated on ${format(new Date(), "MMM dd, yyyy HH:mm")}`, doc.internal.pageSize.width - 90, doc.internal.pageSize.height - 10);
+  }
+  
+  // Save the PDF
   doc.save(`${filename}.pdf`);
 };

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { usePOS } from "@/context/POSContext";
 import { useGameZone } from "@/context/GameZoneContext";
@@ -15,14 +14,19 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 import {
   ChartBarIcon,
   Clock,
   CalendarClock,
   Settings,
-  DollarSign
+  DollarSign,
+  Download,
+  FileText,
+  FilePdf
 } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts";
+import { generateSalesSummaryPDF } from "@/utils/pdfUtils";
 
 const SalesSummaryPage: React.FC = () => {
   const { transactions, getTotalSalesByDevice, getTotalHoursByDevice } = usePOS();
@@ -136,6 +140,28 @@ const SalesSummaryPage: React.FC = () => {
     link.click();
     document.body.removeChild(link);
   };
+  
+  const handleDownloadPDF = () => {
+    const filename = `sales-summary-${format(startDate, 'yyyy-MM-dd')}-to-${format(endDate, 'yyyy-MM-dd')}`;
+    
+    const summaryData = {
+      startDate,
+      endDate,
+      totalSales,
+      totalTransactions,
+      averageTransaction,
+      deviceHoursData,
+      paymentMethodData,
+      transactions: filteredTransactions
+    };
+    
+    generateSalesSummaryPDF(summaryData, filename);
+    
+    toast({
+      title: "PDF Generated",
+      description: "Your sales summary has been exported to PDF",
+    });
+  };
 
   return (
     <div className="container mx-auto py-6 max-w-7xl">
@@ -164,11 +190,16 @@ const SalesSummaryPage: React.FC = () => {
           />
         </div>
         
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 flex-wrap">
           <Button variant="outline" onClick={handleDailyView}>Today</Button>
           <Button variant="outline" onClick={handleWeeklyView}>This Week</Button>
           <Button variant="outline" onClick={handleMonthlyView}>This Month</Button>
-          <Button variant="outline" onClick={exportToCSV}>Export CSV</Button>
+          <Button variant="outline" onClick={exportToCSV}>
+            <FileText className="h-4 w-4 mr-2" /> CSV
+          </Button>
+          <Button variant="outline" onClick={handleDownloadPDF}>
+            <FilePdf className="h-4 w-4 mr-2" /> PDF
+          </Button>
         </div>
       </div>
       
