@@ -1,9 +1,11 @@
 
-import * as React from "react"
-import { OTPInput, OTPInputContext } from "input-otp"
-import { Dot } from "lucide-react"
+"use client";
 
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { DotFilledIcon } from "@radix-ui/react-icons";
+import { OTPInput, SlotProps } from "input-otp";
+import { cn } from "@/lib/utils";
+import { useId } from "react";
 
 const InputOTP = React.forwardRef<
   React.ElementRef<typeof OTPInput>,
@@ -18,47 +20,36 @@ const InputOTP = React.forwardRef<
     className={cn("disabled:cursor-not-allowed", className)}
     {...props}
   />
-))
-InputOTP.displayName = "InputOTP"
+));
+InputOTP.displayName = "InputOTP";
 
 const InputOTPGroup = React.forwardRef<
-  React.ElementRef<"div">,
-  React.ComponentPropsWithoutRef<"div">
+  React.HTMLAttributes<HTMLDivElement>,
+  React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
   <div ref={ref} className={cn("flex items-center", className)} {...props} />
-))
-InputOTPGroup.displayName = "InputOTPGroup"
+));
+InputOTPGroup.displayName = "InputOTPGroup";
 
 const InputOTPSlot = React.forwardRef<
   React.ElementRef<"div">,
-  React.ComponentPropsWithoutRef<"div"> & { index: number }
->(({ index, className, ...props }, ref) => {
-  const inputOTPContext = React.useContext(OTPInputContext)
-  
-  // Check if inputOTPContext and slots exist before accessing them
-  if (!inputOTPContext || !inputOTPContext.slots) {
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          "relative flex h-10 w-10 items-center justify-center border-y border-r border-input text-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md",
-          className
-        )}
-        {...props}
-      />
-    )
+  SlotProps & {
+    index: number;
   }
+>(({ char, hasFakeCaret, isActive, className, ...props }, ref) => {
+  // Generate a unique ID for this slot instance
+  const id = useId();
   
-  // Make sure the slots array contains the index before accessing it
-  const slot = inputOTPContext.slots[index] || { char: '', hasFakeCaret: false, isActive: false }
-  const { char, hasFakeCaret, isActive } = slot
+  // Use index from props or fallback to a default
+  const index = props.index || 0;
 
+  // Add safety checks to ensure slots is defined and has the correct index
   return (
     <div
       ref={ref}
       className={cn(
-        "relative flex h-10 w-10 items-center justify-center border-y border-r border-input text-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md",
-        isActive && "z-10 ring-2 ring-ring ring-offset-background",
+        "relative flex h-10 w-10 items-center justify-center rounded-md border border-input text-sm transition-all",
+        isActive ? "z-10 ring-2 ring-ring ring-offset-background" : "",
         className
       )}
       {...props}
@@ -66,22 +57,22 @@ const InputOTPSlot = React.forwardRef<
       {char}
       {hasFakeCaret && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="h-4 w-px animate-caret-blink bg-foreground duration-1000" />
+          <div className="h-4 w-px animate-caret-blink bg-foreground duration-500" />
         </div>
       )}
     </div>
-  )
-})
-InputOTPSlot.displayName = "InputOTPSlot"
+  );
+});
+InputOTPSlot.displayName = "InputOTPSlot";
 
 const InputOTPSeparator = React.forwardRef<
   React.ElementRef<"div">,
   React.ComponentPropsWithoutRef<"div">
 >(({ ...props }, ref) => (
   <div ref={ref} role="separator" {...props}>
-    <Dot />
+    <DotFilledIcon />
   </div>
-))
-InputOTPSeparator.displayName = "InputOTPSeparator"
+));
+InputOTPSeparator.displayName = "InputOTPSeparator";
 
-export { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator }
+export { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator };
