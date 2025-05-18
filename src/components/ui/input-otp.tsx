@@ -5,7 +5,6 @@ import * as React from "react";
 import { DotFilledIcon } from "@radix-ui/react-icons";
 import { OTPInput, SlotProps } from "input-otp";
 import { cn } from "@/lib/utils";
-import { useId } from "react";
 
 const InputOTP = React.forwardRef<
   React.ElementRef<typeof OTPInput>,
@@ -24,26 +23,29 @@ const InputOTP = React.forwardRef<
 InputOTP.displayName = "InputOTP";
 
 const InputOTPGroup = React.forwardRef<
-  React.HTMLAttributes<HTMLDivElement>,
+  HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
   <div ref={ref} className={cn("flex items-center", className)} {...props} />
 ));
 InputOTPGroup.displayName = "InputOTPGroup";
 
+// Extended SlotProps to include className and index
+interface ExtendedSlotProps extends SlotProps {
+  className?: string;
+  index: number;
+}
+
 const InputOTPSlot = React.forwardRef<
-  React.ElementRef<"div">,
-  SlotProps & {
-    index: number;
-  }
+  HTMLDivElement,
+  ExtendedSlotProps
 >(({ char, hasFakeCaret, isActive, className, ...props }, ref) => {
   // Generate a unique ID for this slot instance
-  const id = useId();
+  const id = React.useId();
   
   // Use index from props or fallback to a default
   const index = props.index || 0;
 
-  // Add safety checks to ensure slots is defined and has the correct index
   return (
     <div
       ref={ref}
@@ -66,7 +68,7 @@ const InputOTPSlot = React.forwardRef<
 InputOTPSlot.displayName = "InputOTPSlot";
 
 const InputOTPSeparator = React.forwardRef<
-  React.ElementRef<"div">,
+  HTMLDivElement,
   React.ComponentPropsWithoutRef<"div">
 >(({ ...props }, ref) => (
   <div ref={ref} role="separator" {...props}>
