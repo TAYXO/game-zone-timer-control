@@ -14,6 +14,7 @@ import POSPage from "./pages/POSPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import SalesSummaryPage from "./pages/SalesSummaryPage";
 import PINLockPage from "./pages/PINLockPage";
+import PINManagementPage from "./pages/PINManagementPage";
 import NotFound from "./pages/NotFound";
 import Navbar from "./components/Navbar";
 
@@ -37,6 +38,7 @@ const AppContent = () => {
       <div className="min-h-screen bg-background">
         <Routes>
           <Route path="/lock" element={<PINLockPage />} />
+          <Route path="/pin-management" element={<PINManagementPage />} />
           
           <Route path="/" element={
             <ProtectedRoute>

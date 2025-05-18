@@ -1,9 +1,15 @@
 
 import React, { useState } from "react";
 import { usePOS } from "@/context/POSContext";
-import { Transaction } from "@/types/pos";
+import { usePIN } from "@/context/PINContext";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
 import {
   Table,
   TableBody,
@@ -12,138 +18,143 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { Trash2 } from "lucide-react";
 
-const TransactionsPage: React.FC = () => {
-  const { transactions } = usePOS();
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
+const formatDate = (date: Date) => {
+  return new Date(date).toLocaleString();
+};
 
-  // Filter transactions based on search and date
-  const filteredTransactions = transactions.filter(transaction => {
-    const formattedDate = format(transaction.timestamp, "yyyy-MM-dd");
-    const matchesDate = !dateFilter || formattedDate === dateFilter;
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  }).format(amount);
+};
 
-    // Check if any product in the transaction matches the search query
-    const matchesSearch = !searchQuery || transaction.items.some(item => 
-      item.product.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    return matchesDate && matchesSearch;
-  });
-
-  // Sort transactions by timestamp (newest first)
-  const sortedTransactions = [...filteredTransactions].sort(
-    (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+const TransactionsPage = () => {
+  const { transactions, deleteTransaction } = usePOS();
+  const { showPINPrompt } = usePIN();
+  const { toast } = useToast();
+  const [dateFilter, setDateFilter] = useState<string>("");
+  
+  const sortedTransactions = [...transactions].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
+  
+  const filteredTransactions = dateFilter
+    ? sortedTransactions.filter(tx => {
+        const txDate = new Date(tx.timestamp).toISOString().split('T')[0];
+        return txDate === dateFilter;
+      })
+    : sortedTransactions;
 
+  const handleDeleteTransaction = (id: string) => {
+    showPINPrompt(() => {
+      deleteTransaction(id);
+      toast({
+        title: "Transaction Deleted",
+        description: "The transaction has been successfully deleted",
+      });
+    }, "Please enter your PIN to delete this transaction");
+  };
+  
   return (
-    <div className="container mx-auto py-6 max-w-7xl">
-      <h1 className="text-3xl font-bold mb-8">Transaction History</h1>
+    <div className="container py-6">
+      <h1 className="text-3xl font-bold mb-6">Transaction History</h1>
       
-      <div className="mb-8 flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <Input
-            type="search"
-            placeholder="Search transactions..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div>
-          <Input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-          />
-        </div>
-      </div>
-      
-      {sortedTransactions.length > 0 ? (
-        <div className="border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Payment Method</TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedTransactions.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell>{format(transaction.timestamp, "MMM dd, yyyy")}</TableCell>
-                  <TableCell>{format(transaction.timestamp, "h:mm a")}</TableCell>
-                  <TableCell>${transaction.total.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <span className="capitalize">{transaction.paymentMethod}</span>
-                  </TableCell>
-                  <TableCell>{transaction.items.reduce((sum, item) => sum + item.quantity, 0)} items</TableCell>
-                  <TableCell className="text-right">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setSelectedTransaction(transaction)}
-                    >
-                      View Details
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        <div className="text-center py-12 border rounded-md">
-          <p className="text-muted-foreground">No transactions found</p>
-        </div>
-      )}
-      
-      {selectedTransaction && (
-        <Dialog open={true} onOpenChange={() => setSelectedTransaction(null)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Transaction Details</DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
-                <div className="text-muted-foreground">Date & Time:</div>
-                <div>{format(selectedTransaction.timestamp, "MMM dd, yyyy h:mm a")}</div>
-                
-                <div className="text-muted-foreground">Payment Method:</div>
-                <div className="capitalize">{selectedTransaction.paymentMethod}</div>
-              </div>
-              
-              <div>
-                <h3 className="font-medium mb-2">Items:</h3>
-                <div className="space-y-2">
-                  {selectedTransaction.items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between text-sm border-b pb-2">
-                      <div>
-                        {item.quantity} x {item.product.name}
-                      </div>
-                      <div>
-                        ${(item.product.price * item.quantity).toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="flex justify-between font-bold border-t pt-4">
-                <div>Total:</div>
-                <div>${selectedTransaction.total.toFixed(2)}</div>
-              </div>
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <div>
+              <label htmlFor="date-filter" className="block text-sm mb-1">
+                Filter by Date
+              </label>
+              <input
+                id="date-filter"
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="px-3 py-2 border rounded-md"
+              />
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
+            
+            {dateFilter && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setDateFilter("")}
+                className="mt-5"
+              >
+                Clear Filter
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Transactions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {filteredTransactions.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-muted-foreground">No transactions found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Items</TableHead>
+                    <TableHead>Payment Method</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredTransactions.map((transaction) => (
+                    <TableRow key={transaction.id}>
+                      <TableCell>{formatDate(transaction.timestamp)}</TableCell>
+                      <TableCell>
+                        {transaction.items.map((item, idx) => (
+                          <div key={idx} className="text-sm">
+                            {item.quantity} x {item.product.name}
+                          </div>
+                        ))}
+                      </TableCell>
+                      <TableCell>
+                        <span className="capitalize">{transaction.paymentMethod}</span>
+                      </TableCell>
+                      <TableCell>
+                        {transaction.customerName || "Anonymous"}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(transaction.total)}
+                      </TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleDeleteTransaction(transaction.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

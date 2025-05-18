@@ -18,5 +18,6 @@ export interface POSContextType {
   getTransactionsByDateRange: (startDate: Date, endDate: Date) => Transaction[];
   getTotalSalesByDevice: (deviceId?: string) => number;
   getTotalHoursByDevice: (deviceId?: string) => number;
+  deleteTransaction: (id: string) => void;
   loading: boolean;
 }

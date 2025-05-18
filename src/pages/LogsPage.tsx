@@ -11,10 +11,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useGameZone } from "@/context/GameZoneContext";
+import { usePIN } from "@/context/PINContext";
+import { useToast } from "@/hooks/use-toast";
+import { Trash2 } from "lucide-react";
 
 const LogsPage = () => {
-  const { usageLogs, devices } = useGameZone();
+  const { usageLogs, devices, clearUsageLogs } = useGameZone();
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | "all">("all");
+  const { showPINPrompt } = usePIN();
+  const { toast } = useToast();
   
   const filteredLogs = selectedDeviceId === "all"
     ? usageLogs
@@ -28,6 +33,24 @@ const LogsPage = () => {
   const formatDate = (date: Date): string => {
     return new Date(date).toLocaleString();
   };
+
+  const handleClearLogs = () => {
+    showPINPrompt(() => {
+      if (selectedDeviceId === "all") {
+        clearUsageLogs();
+        toast({
+          title: "Logs Cleared",
+          description: "All usage logs have been cleared",
+        });
+      } else {
+        clearUsageLogs(selectedDeviceId);
+        toast({
+          title: "Logs Cleared",
+          description: `Usage logs for selected device have been cleared`,
+        });
+      }
+    }, "Please enter your PIN to clear logs");
+  };
   
   return (
     <div className="container py-6 max-w-5xl">
@@ -38,6 +61,14 @@ const LogsPage = () => {
             Track device usage and session history
           </p>
         </div>
+        <Button 
+          variant="destructive" 
+          onClick={handleClearLogs}
+          className="flex items-center gap-2"
+        >
+          <Trash2 className="h-4 w-4" />
+          Clear Logs
+        </Button>
       </div>
       
       <Card className="mb-6">
