@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect } from "react";
 import { Product, CartItem, Transaction, PaymentMethod } from "@/types/pos";
 import { generateId } from "@/utils/gameUtils";
@@ -271,6 +270,28 @@ export const POSProvider: React.FC<{children: React.ReactNode}> = ({ children })
     );
   };
   
+  const updateCartItemDetails = (productId: string, details: { price: number; duration?: number }) => {
+    setCart(prevCart => 
+      prevCart.map(item => 
+        item.product.id === productId 
+          ? { 
+              ...item, 
+              product: { 
+                ...item.product, 
+                price: details.price,
+                duration: details.duration !== undefined ? details.duration : item.product.duration
+              } 
+            } 
+          : item
+      )
+    );
+    
+    toast({
+      title: "Product Updated",
+      description: `Product details have been updated in cart.`,
+    });
+  };
+  
   const clearCart = () => {
     setCart([]);
   };
@@ -441,6 +462,7 @@ export const POSProvider: React.FC<{children: React.ReactNode}> = ({ children })
     addToCart,
     removeFromCart,
     updateCartItemQuantity,
+    updateCartItemDetails,
     clearCart,
     processTransaction,
     getTransactionsByDate,

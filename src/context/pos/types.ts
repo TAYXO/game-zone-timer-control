@@ -11,6 +11,7 @@ export interface POSContextType {
   addToCart: (product: Product, quantity?: number) => void;
   removeFromCart: (productId: string) => void;
   updateCartItemQuantity: (productId: string, quantity: number) => void;
+  updateCartItemDetails: (productId: string, details: { price: number; duration?: number }) => void;
   clearCart: () => void;
   processTransaction: (paymentMethod: PaymentMethod, customerName?: string) => void;
   getTransactionsByDate: (date: Date) => Transaction[];
