@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { usePIN } from "@/context/PINContext"; 
-import { Lock } from "lucide-react";
+import { Lock, Settings } from "lucide-react";
 
 const Navbar = () => {
   const location = useLocation();
@@ -20,7 +20,6 @@ const Navbar = () => {
     { href: "/pos", label: "Point of Sale" },
     { href: "/transactions", label: "Transactions" },
     { href: "/sales-summary", label: "Sales Summary" },
-    { href: "/expenses", label: "Expenses" },
     { href: "/pin-management", label: "PIN Management" },
   ];
 

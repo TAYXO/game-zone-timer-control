@@ -15,7 +15,6 @@ import TransactionsPage from "./pages/TransactionsPage";
 import SalesSummaryPage from "./pages/SalesSummaryPage";
 import PINLockPage from "./pages/PINLockPage";
 import PINManagementPage from "./pages/PINManagementPage";
-import ExpensesPage from "./pages/ExpensesPage";
 import NotFound from "./pages/NotFound";
 import Navbar from "./components/Navbar";
 
@@ -82,15 +81,6 @@ const AppContent = () => {
               <>
                 <Navbar />
                 <SalesSummaryPage />
-              </>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/expenses" element={
-            <ProtectedRoute>
-              <>
-                <Navbar />
-                <ExpensesPage />
               </>
             </ProtectedRoute>
           } />
