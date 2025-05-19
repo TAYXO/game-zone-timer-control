@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { SettingsProvider } from './context/SettingsContext';
 import { POSProvider } from './context/POSContext';
 import { GameZoneProvider } from './context/GameZoneContext';
-import { PINProvider } from './context/PINContext';
-import { usePIN } from './context/PINContext';
+import { PINProvider, usePIN } from './context/PINContext';
+import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import PINLock from './components/PINLock';
 import SettingsPage from './pages/SettingsPage';
@@ -16,7 +17,7 @@ import ReportsPage from './pages/ReportsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import { Toaster } from "@/components/ui/toaster"
 
-const App = () => {
+const AppContent = () => {
   const { isPINSet, verifyPIN } = usePIN();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAppReady, setIsAppReady] = useState(false);
@@ -46,32 +47,42 @@ const App = () => {
   }
 
   return (
+    <>
+      {isPINSet && !isAuthenticated ? (
+        <PINLock onPINSubmit={handlePINSubmit} />
+      ) : (
+        <>
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<Navigate to="/pos" />} />
+            <Route path="/pos" element={<POSPage />} />
+            <Route path="/transactions" element={<TransactionsPage />} />
+            <Route path="/expenses" element={<ExpensesPage />} />
+            <Route path="/sales-summary" element={<SalesSummaryPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </>
+      )}
+    </>
+  );
+};
+
+const App = () => {
+  return (
     <Router>
-      <SettingsProvider>
-        <PINProvider>
-          <GameZoneProvider>
-            <POSProvider>
-              {isPINSet && !isAuthenticated ? (
-                <PINLock onPINSubmit={handlePINSubmit} />
-              ) : (
-                <>
-                  <Navbar />
-                  <Routes>
-                    <Route path="/" element={<Navigate to="/pos" />} />
-                    <Route path="/pos" element={<POSPage />} />
-                    <Route path="/transactions" element={<TransactionsPage />} />
-                    <Route path="/expenses" element={<ExpensesPage />} />
-                    <Route path="/sales-summary" element={<SalesSummaryPage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/reports" element={<ReportsPage />} />
-                    <Route path="*" element={<NotFoundPage />} />
-                  </Routes>
-                </>
-              )}
-            </POSProvider>
-          </GameZoneProvider>
-        </PINProvider>
-      </SettingsProvider>
+      <AuthProvider>
+        <SettingsProvider>
+          <PINProvider>
+            <GameZoneProvider>
+              <POSProvider>
+                <AppContent />
+              </POSProvider>
+            </GameZoneProvider>
+          </PINProvider>
+        </SettingsProvider>
+      </AuthProvider>
       <Toaster />
     </Router>
   );

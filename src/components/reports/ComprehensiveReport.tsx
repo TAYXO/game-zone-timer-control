@@ -1,11 +1,10 @@
-
 import React, { useState } from "react";
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { FilePdf, Calendar } from "lucide-react";
+import { FileText, Calendar } from "lucide-react";
 import { usePIN } from "@/context/PINContext";
 import { usePOS } from "@/context/POSContext";
 import { generateComprehensiveReportPDF } from "@/utils/pdfUtils";
@@ -187,7 +186,7 @@ const ComprehensiveReport: React.FC = () => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FilePdf className="h-5 w-5" />
+          <FileText className="h-5 w-5" />
           Comprehensive Business Report
         </CardTitle>
       </CardHeader>
@@ -236,7 +235,7 @@ const ComprehensiveReport: React.FC = () => {
               className="w-full"
               disabled={isLoading}
             >
-              <FilePdf className="mr-2 h-4 w-4" />
+              <FileText className="mr-2 h-4 w-4" />
               {isLoading ? "Generating..." : "Generate Comprehensive Report"}
             </Button>
           </div>
