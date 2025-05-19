@@ -23,7 +23,7 @@ import {
   DollarSign,
   Download,
   FileText,
-  FilePdf
+  FileDown
 } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { generateSalesSummaryPDF } from "@/utils/pdfUtils";
@@ -31,6 +31,7 @@ import { generateSalesSummaryPDF } from "@/utils/pdfUtils";
 const SalesSummaryPage: React.FC = () => {
   const { transactions, getTotalSalesByDevice, getTotalHoursByDevice } = usePOS();
   const { devices } = useGameZone();
+  const { toast } = useToast();
   
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
@@ -198,7 +199,7 @@ const SalesSummaryPage: React.FC = () => {
             <FileText className="h-4 w-4 mr-2" /> CSV
           </Button>
           <Button variant="outline" onClick={handleDownloadPDF}>
-            <FilePdf className="h-4 w-4 mr-2" /> PDF
+            <FileDown className="h-4 w-4 mr-2" /> PDF
           </Button>
         </div>
       </div>

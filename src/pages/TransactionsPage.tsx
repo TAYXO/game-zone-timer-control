@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { usePOS } from "@/context/POSContext";
 import { usePIN } from "@/context/PINContext";
@@ -18,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2, FilePdf, Download } from "lucide-react";
+import { Trash2, FileDown, Download } from "lucide-react";
 import { generateTransactionPDF } from "@/utils/pdfUtils";
 
 const formatDate = (date: Date) => {
@@ -112,7 +111,7 @@ const TransactionsPage = () => {
               onClick={handleDownloadPDF}
               className="mt-5 ml-auto flex items-center gap-2"
             >
-              <FilePdf className="h-4 w-4" /> Download PDF
+              <FileDown className="h-4 w-4" /> Download PDF
             </Button>
           </div>
         </CardContent>
