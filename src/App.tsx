@@ -8,6 +8,7 @@ import { PINProvider, usePIN } from './context/PINContext';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import PINLock from './components/PINLock';
+import Index from './pages/Index';
 import SettingsPage from './pages/SettingsPage';
 import POSPage from './pages/POSPage';
 import TransactionsPage from './pages/TransactionsPage';
@@ -15,6 +16,7 @@ import ExpensesPage from './pages/ExpensesPage';
 import SalesSummaryPage from './pages/SalesSummaryPage';
 import ReportsPage from './pages/ReportsPage';
 import NotFoundPage from './pages/NotFoundPage';
+import PINLockPage from './pages/PINLockPage';
 import { Toaster } from "@/components/ui/toaster"
 
 const AppContent = () => {
@@ -54,13 +56,15 @@ const AppContent = () => {
         <>
           <Navbar />
           <Routes>
-            <Route path="/" element={<Navigate to="/pos" />} />
+            <Route path="/" element={<Index />} />
             <Route path="/pos" element={<POSPage />} />
             <Route path="/transactions" element={<TransactionsPage />} />
             <Route path="/expenses" element={<ExpensesPage />} />
             <Route path="/sales-summary" element={<SalesSummaryPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/pin-management" element={<PINLockPage />} />
+            <Route path="/lock" element={<PINLockPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </>
