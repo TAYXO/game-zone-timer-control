@@ -83,8 +83,11 @@ const Navbar = () => {
             <DropdownMenuItem>
               Profile
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem as={NavLink} to="/settings">
               Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem as={NavLink} to="/pin-management">
+              PIN Management
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
