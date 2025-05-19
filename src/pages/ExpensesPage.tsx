@@ -55,17 +55,13 @@ const ExpensesPage = () => {
   const fetchExpenses = async () => {
     setLoading(true);
     try {
-      // Use typeCasting to avoid TypeScript errors with the expenses table
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("expenses")
         .select("*")
         .order("date", { ascending: false });
       
       if (error) throw error;
-      
-      // Ensure we're setting the correct expense type
-      const typedData = data as Expense[];
-      setExpenses(typedData || []);
+      setExpenses(data || []);
     } catch (error: any) {
       toast.error("Failed to load expenses", {
         description: error.message
@@ -97,17 +93,14 @@ const ExpensesPage = () => {
 
   const handleAddExpense = async (expense: Omit<Expense, "id">) => {
     try {
-      // Use typeCasting to avoid TypeScript errors with the expenses table
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("expenses")
         .insert([expense])
         .select();
       
       if (error) throw error;
       
-      // Ensure we're setting the correct expense type
-      const typedData = data as Expense[];
-      setExpenses([...(typedData || []), ...expenses]);
+      setExpenses([...(data || []), ...expenses]);
       setIsAddDialogOpen(false);
       toast.success("Expense added successfully");
     } catch (error: any) {

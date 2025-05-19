@@ -69,8 +69,7 @@ export const ExpensesList = ({ expenses, loading, onRefresh }: ExpensesListProps
         }
       }
 
-      // Use typeCasting to avoid TypeScript errors with the expenses table
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("expenses")
         .delete()
         .match({ id: expenseToDelete });
@@ -93,8 +92,7 @@ export const ExpensesList = ({ expenses, loading, onRefresh }: ExpensesListProps
     if (!editingExpense) return;
 
     try {
-      // Use typeCasting to avoid TypeScript errors with the expenses table
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("expenses")
         .update(updatedExpense)
         .match({ id: editingExpense.id });

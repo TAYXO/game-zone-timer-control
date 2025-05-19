@@ -25,7 +25,6 @@ interface PINContextType {
   lockScreen: () => void;
   unlockScreen: (pin: string) => boolean;
   showPINPrompt: (action: () => void, message: string) => void;
-  verifyPIN: (message: string) => Promise<boolean>;
 }
 
 interface PINPromptProps {
@@ -76,8 +75,8 @@ const PINPrompt: React.FC<PINPromptProps> = ({ isOpen, onClose, onConfirm, messa
             onChange={setPin}
             render={({ slots }) => (
               <InputOTPGroup>
-                {(slots || []).map((slot, index) => (
-                  slot ? <InputOTPSlot key={index} {...slot} index={index} /> : null
+                {slots.map((slot, index) => (
+                  <InputOTPSlot key={index} {...slot} index={index} />
                 ))}
               </InputOTPGroup>
             )}
@@ -107,7 +106,6 @@ export const PINProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [pinPromptOpen, setPinPromptOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [promptMessage, setPromptMessage] = useState("");
-  const [verifyPinCallback, setVerifyPinCallback] = useState<((result: boolean) => void) | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -173,7 +171,7 @@ export const PINProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     
     const interval = setInterval(checkInactivity, 30000); // Check every 30 seconds
     return () => clearInterval(interval);
-  }, [isPINSet, isLocked]);
+  }, [isPINSet, isLocked, toast]);
   
   const validatePIN = (pin: string): boolean => {
     const storedPIN = localStorage.getItem(PIN_KEY);
@@ -217,46 +215,16 @@ export const PINProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setPromptMessage(message);
     setPinPromptOpen(true);
   };
-  
-  // New method to handle PIN verification with promises
-  const verifyPIN = (message: string): Promise<boolean> => {
-    return new Promise((resolve) => {
-      // If no PIN is set, resolve true immediately
-      if (!isPINSet) {
-        resolve(true);
-        return;
-      }
-      
-      // Set the callback that will resolve the promise
-      setVerifyPinCallback(() => resolve);
-      
-      // Show PIN prompt
-      setPromptMessage(message);
-      setPinPromptOpen(true);
-    });
-  };
 
   const handlePinPromptClose = () => {
     setPinPromptOpen(false);
     setPendingAction(null);
     setPromptMessage("");
-    
-    // Resolve false if prompt is closed without confirmation
-    if (verifyPinCallback) {
-      verifyPinCallback(false);
-      setVerifyPinCallback(null);
-    }
   };
 
   const handlePinPromptConfirm = () => {
     if (pendingAction) {
       pendingAction();
-    }
-    
-    // Resolve true if PIN was confirmed
-    if (verifyPinCallback) {
-      verifyPinCallback(true);
-      setVerifyPinCallback(null);
     }
   };
 
@@ -268,7 +236,6 @@ export const PINProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     lockScreen,
     unlockScreen,
     showPINPrompt,
-    verifyPIN,
   };
 
   return (
