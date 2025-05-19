@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -53,6 +54,9 @@ const Navbar = () => {
           </NavLink>
           <NavLink to="/transactions" className={({isActive}) => isActive ? activeClass : normalClass}>
             Transactions
+          </NavLink>
+          <NavLink to="/devices" className={({isActive}) => isActive ? activeClass : normalClass}>
+            Devices
           </NavLink>
           <NavLink to="/expenses" className={({isActive}) => isActive ? activeClass : normalClass}>
             Expenses

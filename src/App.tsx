@@ -17,6 +17,7 @@ import SalesSummaryPage from './pages/SalesSummaryPage';
 import ReportsPage from './pages/ReportsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import PINLockPage from './pages/PINLockPage';
+import DevicesPage from './pages/DevicesPage';
 import { Toaster } from "@/components/ui/toaster"
 
 const AppContent = () => {
@@ -65,6 +66,7 @@ const AppContent = () => {
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/pin-management" element={<PINLockPage />} />
             <Route path="/lock" element={<PINLockPage />} />
+            <Route path="/devices" element={<DevicesPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </>

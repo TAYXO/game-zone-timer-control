@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
-import { Shield } from "lucide-react";
+import { Shield, Gamepad } from "lucide-react";
 
 const Index = () => {
   const { user } = useAuth();
@@ -74,6 +74,22 @@ const Index = () => {
             <p className="mb-4">View analytics and summaries of your sales data.</p>
             <Link to="/sales-summary" className="text-blue-500 hover:text-blue-700 underline">
               View Summary
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="bg-primary/10">
+            <CardTitle className="flex items-center">
+              <Gamepad className="h-5 w-5 mr-2" />
+              Device Management
+            </CardTitle>
+            <CardDescription>Game Zone Devices</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4">Manage and monitor your gaming devices and sessions.</p>
+            <Link to="/devices" className="text-blue-500 hover:text-blue-700 underline">
+              Manage Devices
             </Link>
           </CardContent>
         </Card>
