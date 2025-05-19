@@ -1,61 +1,95 @@
-
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import React, { useState } from "react";
+import { NavLink } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { usePIN } from "@/context/PINContext"; 
-import { Lock } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useToast } from "@/hooks/use-toast";
 
 const Navbar = () => {
-  const location = useLocation();
-  const { lockScreen } = usePIN();
-
-  const isActive = (path: string) => {
-    return location.pathname === path;
+  const { user, logout } = useAuth();
+  const { toast } = useToast();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Logout failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
-  const links = [
-    { href: "/", label: "Devices" },
-    { href: "/logs", label: "Activity Log" },
-    { href: "/pos", label: "Point of Sale" },
-    { href: "/transactions", label: "Transactions" },
-    { href: "/sales-summary", label: "Sales Summary" },
-    { href: "/expenses", label: "Expenses" },
-    { href: "/pin-management", label: "PIN Management" },
-  ];
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
 
+  const normalClass = "text-sm font-medium transition-colors hover:text-foreground/80";
+  const activeClass = "text-sm font-medium text-foreground/80 underline underline-offset-4";
+  
   return (
-    <div className="border-b">
-      <div className="flex h-16 items-center px-4 container mx-auto">
-        <div className="font-bold text-xl mr-8">GameZone</div>
-        <nav className="flex items-center space-x-4 lg:space-x-6 mx-6 flex-grow overflow-x-auto">
-          {links.map(link => (
-            <Link
-              key={link.href}
-              to={link.href}
-              className={cn(
-                "text-sm font-medium transition-colors hover:text-primary whitespace-nowrap",
-                isActive(link.href) 
-                  ? "text-primary underline underline-offset-4" 
-                  : "text-muted-foreground"
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline" 
-            size="icon"
-            onClick={lockScreen}
-            title="Lock Application"
-          >
-            <Lock className="h-4 w-4" />
-          </Button>
+    <nav className="border-b">
+      <div className="flex h-16 items-center px-4">
+        <div className="ml-auto flex items-center gap-6">
+          <NavLink to="/" className={({isActive}) => isActive ? activeClass : normalClass}>
+            Dashboard
+          </NavLink>
+          <NavLink to="/pos" className={({isActive}) => isActive ? activeClass : normalClass}>
+            POS
+          </NavLink>
+          <NavLink to="/transactions" className={({isActive}) => isActive ? activeClass : normalClass}>
+            Transactions
+          </NavLink>
+          <NavLink to="/expenses" className={({isActive}) => isActive ? activeClass : normalClass}>
+            Expenses
+          </NavLink>
+          <NavLink to="/sales-summary" className={({isActive}) => isActive ? activeClass : normalClass}>
+            Sales Summary
+          </NavLink>
+          <NavLink to="/reports" className={({isActive}) => isActive ? activeClass : normalClass}>
+            Reports
+          </NavLink>
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="ml-2 h-8 w-8 p-0 data-[state=open]:bg-muted">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={user?.photoURL || ""} alt={user?.displayName || "Avatar"} />
+                <AvatarFallback>{user?.displayName?.charAt(0).toUpperCase() || "AV"}</AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-    </div>
+    </nav>
   );
 };
 

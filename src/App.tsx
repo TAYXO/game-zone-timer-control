@@ -1,120 +1,80 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { GameZoneProvider } from "@/context/GameZoneContext";
-import { POSProvider } from "@/context/POSContext";
-import { PINProvider, usePIN } from "@/context/PINContext";
-import Index from "./pages/Index";
-import DevicesPage from "./pages/DevicesPage";
-import LogsPage from "./pages/LogsPage";
-import POSPage from "./pages/POSPage";
-import TransactionsPage from "./pages/TransactionsPage";
-import SalesSummaryPage from "./pages/SalesSummaryPage";
-import PINLockPage from "./pages/PINLockPage";
-import PINManagementPage from "./pages/PINManagementPage";
-import ExpensesPage from "./pages/ExpensesPage";
-import NotFound from "./pages/NotFound";
-import Navbar from "./components/Navbar";
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { SettingsProvider } from './context/SettingsContext';
+import { POSProvider } from './context/POSContext';
+import { GameZoneProvider } from './context/GameZoneContext';
+import { PINProvider } from './context/PINContext';
+import { usePIN } from './context/PINContext';
+import Navbar from './components/Navbar';
+import PINLock from './components/PINLock';
+import SettingsPage from './pages/SettingsPage';
+import POSPage from './pages/POSPage';
+import TransactionsPage from './pages/TransactionsPage';
+import ExpensesPage from './pages/ExpensesPage';
+import SalesSummaryPage from './pages/SalesSummaryPage';
+import ReportsPage from './pages/ReportsPage';
+import NotFoundPage from './pages/NotFoundPage';
+import { Toaster } from "@/components/ui/toaster"
 
-const queryClient = new QueryClient();
+const App = () => {
+  const { isPINSet, verifyPIN } = usePIN();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAppReady, setIsAppReady] = useState(false);
 
-// Protected route component
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isLocked, isPINSet } = usePIN();
-  
-  if (isLocked && isPINSet) {
-    return <Navigate to="/lock" replace />;
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      if (isPINSet) {
+        setIsAuthenticated(false);
+      } else {
+        setIsAuthenticated(true);
+      }
+      setIsAppReady(true);
+    };
+
+    checkAuthentication();
+  }, [isPINSet]);
+
+  const handlePINSubmit = async (pin: string) => {
+    const isValid = await verifyPIN(pin);
+    if (isValid) {
+      setIsAuthenticated(true);
+    }
+  };
+
+  if (!isAppReady) {
+    return <div>Loading...</div>;
   }
-  
-  return <>{children}</>;
-};
 
-// Main app with providers
-const AppContent = () => {
   return (
-    <PINProvider>
-      <div className="min-h-screen bg-background">
-        <Routes>
-          <Route path="/lock" element={<PINLockPage />} />
-          <Route path="/pin-management" element={<PINManagementPage />} />
-          
-          <Route path="/" element={
-            <ProtectedRoute>
-              <>
-                <Navbar />
-                <DevicesPage />
-              </>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/logs" element={
-            <ProtectedRoute>
-              <>
-                <Navbar />
-                <LogsPage />
-              </>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/pos" element={
-            <ProtectedRoute>
-              <>
-                <Navbar />
-                <POSPage />
-              </>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/transactions" element={
-            <ProtectedRoute>
-              <>
-                <Navbar />
-                <TransactionsPage />
-              </>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/sales-summary" element={
-            <ProtectedRoute>
-              <>
-                <Navbar />
-                <SalesSummaryPage />
-              </>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/expenses" element={
-            <ProtectedRoute>
-              <>
-                <Navbar />
-                <ExpensesPage />
-              </>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </div>
-    </PINProvider>
+    <Router>
+      <SettingsProvider>
+        <PINProvider>
+          <GameZoneProvider>
+            <POSProvider>
+              {isPINSet && !isAuthenticated ? (
+                <PINLock onPINSubmit={handlePINSubmit} />
+              ) : (
+                <>
+                  <Navbar />
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/pos" />} />
+                    <Route path="/pos" element={<POSPage />} />
+                    <Route path="/transactions" element={<TransactionsPage />} />
+                    <Route path="/expenses" element={<ExpensesPage />} />
+                    <Route path="/sales-summary" element={<SalesSummaryPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/reports" element={<ReportsPage />} />
+                    <Route path="*" element={<NotFoundPage />} />
+                  </Routes>
+                </>
+              )}
+            </POSProvider>
+          </GameZoneProvider>
+        </PINProvider>
+      </SettingsProvider>
+      <Toaster />
+    </Router>
   );
 };
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <GameZoneProvider>
-      <POSProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </TooltipProvider>
-      </POSProvider>
-    </GameZoneProvider>
-  </QueryClientProvider>
-);
 
 export default App;

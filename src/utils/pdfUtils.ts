@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
@@ -348,6 +347,177 @@ export const generateSalesSummaryPDF = (
     doc.setFontSize(8);
     doc.text(`GameZone - Page ${i} of ${pageCount}`, 14, doc.internal.pageSize.height - 10);
     doc.text(`Generated on ${format(new Date(), "MMM dd, yyyy HH:mm")}`, doc.internal.pageSize.width - 90, doc.internal.pageSize.height - 10);
+  }
+  
+  // Save the PDF
+  doc.save(`${filename}.pdf`);
+};
+
+// New function to generate a comprehensive report
+export const generateComprehensiveReportPDF = (
+  reportData: {
+    startDate: Date;
+    endDate: Date;
+    salesData: {
+      totalSales: number;
+      totalTransactions: number;
+      averageTransaction: number;
+      paymentMethodData: Array<{name: string; amount: number; count: number}>;
+      transactions: Transaction[];
+    },
+    expensesData: {
+      totalExpenses: number;
+      totalEntries: number;
+      expensesByCategory: Record<string, number>;
+      expenses: Expense[];
+    }
+  },
+  filename: string
+): void => {
+  // Create a new PDF document
+  const doc = new jsPDF();
+  
+  // Set document properties
+  const title = "GameZone Comprehensive Business Report";
+  const dateStr = format(new Date(), "MMMM dd, yyyy");
+  const dateRange = `${format(reportData.startDate, "MMMM dd, yyyy")} - ${format(reportData.endDate, "MMMM dd, yyyy")}`;
+  
+  // Add title and header information
+  doc.setFontSize(20);
+  doc.text(title, 14, 22);
+  
+  doc.setFontSize(12);
+  doc.text(`Report Period: ${dateRange}`, 14, 30);
+  doc.text(`Generated on: ${dateStr}`, 14, 36);
+  
+  // Add financial overview section
+  doc.setFontSize(16);
+  doc.text("Financial Overview", 14, 46);
+  
+  // Calculate profit/loss
+  const totalSales = reportData.salesData.totalSales;
+  const totalExpenses = reportData.expensesData.totalExpenses;
+  const profitLoss = totalSales - totalExpenses;
+  const profitMargin = totalSales > 0 ? (profitLoss / totalSales) * 100 : 0;
+  
+  // Add key metrics
+  doc.setFontSize(12);
+  doc.text(`Total Revenue: $${totalSales.toFixed(2)}`, 20, 56);
+  doc.text(`Total Expenses: $${totalExpenses.toFixed(2)}`, 20, 62);
+  doc.text(`Net Profit/Loss: $${profitLoss.toFixed(2)}`, 20, 68);
+  doc.text(`Profit Margin: ${profitMargin.toFixed(2)}%`, 20, 74);
+  doc.text(`Total Transactions: ${reportData.salesData.totalTransactions}`, 20, 80);
+  doc.text(`Average Transaction: $${reportData.salesData.averageTransaction.toFixed(2)}`, 20, 86);
+  
+  // Add sales breakdown section
+  doc.setFontSize(16);
+  doc.text("Sales Breakdown", 14, 100);
+  
+  // Payment method breakdown table
+  const paymentTableData = reportData.salesData.paymentMethodData.map(method => [
+    method.name,
+    `$${method.amount.toFixed(2)}`,
+    `${method.count}`,
+    `$${(method.amount / method.count).toFixed(2)}`
+  ]);
+  
+  autoTable(doc, {
+    startY: 104,
+    head: [["Payment Method", "Total Amount", "Count", "Avg per Transaction"]],
+    body: paymentTableData,
+    headStyles: {
+      fillColor: [38, 9, 94],
+      textColor: [255, 255, 255],
+      fontStyle: "bold"
+    }
+  });
+  
+  // Add expenses breakdown section
+  const expensesY = (doc as any).lastAutoTable.finalY + 20;
+  doc.setFontSize(16);
+  doc.text("Expenses Breakdown", 14, expensesY);
+  
+  // Category breakdown table
+  const categoryData = Object.entries(reportData.expensesData.expensesByCategory)
+    .sort((a, b) => b[1] - a[1])
+    .map(([category, amount]) => [
+      category,
+      `$${amount.toFixed(2)}`,
+      `${((amount / totalExpenses) * 100).toFixed(2)}%`
+    ]);
+  
+  autoTable(doc, {
+    startY: expensesY + 4,
+    head: [["Category", "Amount", "Percentage"]],
+    body: categoryData,
+    headStyles: {
+      fillColor: [38, 9, 94],
+      textColor: [255, 255, 255],
+      fontStyle: "bold"
+    }
+  });
+  
+  // Recent transactions section
+  const transactionsY = (doc as any).lastAutoTable.finalY + 20;
+  doc.setFontSize(14);
+  const transactionsTitle = "Recent Sales Transactions (Top 5)";
+  doc.text(transactionsTitle, 14, transactionsY);
+  
+  const transactionTableData = reportData.salesData.transactions
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 5)
+    .map(t => [
+      format(new Date(t.timestamp), "MM/dd/yyyy"),
+      t.items.map(item => `${item.quantity}x ${item.product.name.substring(0, 15)}`).join(", ").substring(0, 30),
+      t.paymentMethod,
+      `$${t.total.toFixed(2)}`
+    ]);
+  
+  autoTable(doc, {
+    startY: transactionsY + 4,
+    head: [["Date", "Items", "Payment", "Total"]],
+    body: transactionTableData,
+    headStyles: {
+      fillColor: [38, 9, 94],
+      textColor: [255, 255, 255],
+      fontStyle: "bold"
+    }
+  });
+  
+  // Recent expenses section
+  const expensesListY = (doc as any).lastAutoTable.finalY + 20;
+  doc.setFontSize(14);
+  const expensesTitle = "Recent Expenses (Top 5)";
+  doc.text(expensesTitle, 14, expensesListY);
+  
+  const expensesTableData = reportData.expensesData.expenses
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5)
+    .map(e => [
+      format(new Date(e.date), "MM/dd/yyyy"),
+      e.description,
+      e.category,
+      `$${e.amount.toFixed(2)}`
+    ]);
+  
+  autoTable(doc, {
+    startY: expensesListY + 4,
+    head: [["Date", "Description", "Category", "Amount"]],
+    body: expensesTableData,
+    headStyles: {
+      fillColor: [38, 9, 94],
+      textColor: [255, 255, 255],
+      fontStyle: "bold"
+    }
+  });
+  
+  // Add footer
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.text(`GameZone - Page ${i} of ${pageCount}`, 14, doc.internal.pageSize.height - 10);
+    doc.text(`Generated on ${dateStr}`, doc.internal.pageSize.width - 90, doc.internal.pageSize.height - 10);
   }
   
   // Save the PDF
