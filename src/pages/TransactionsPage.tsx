@@ -18,8 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2, FileDown, Download } from "lucide-react";
-import { generateTransactionPDF } from "@/utils/pdfUtils";
+import { Trash2 } from "lucide-react";
 
 const formatDate = (date: Date) => {
   return new Date(date).toLocaleString();
@@ -59,19 +58,6 @@ const TransactionsPage = () => {
     }, "Please enter your PIN to delete this transaction");
   };
   
-  const handleDownloadPDF = () => {
-    const filename = dateFilter 
-      ? `transactions-${dateFilter}` 
-      : `transactions-${new Date().toISOString().split('T')[0]}`;
-      
-    generateTransactionPDF(filteredTransactions, filename);
-    
-    toast({
-      title: "PDF Generated",
-      description: "Your transactions have been exported to PDF",
-    });
-  };
-  
   return (
     <div className="container py-6">
       <h1 className="text-3xl font-bold mb-6">Transaction History</h1>
@@ -105,15 +91,6 @@ const TransactionsPage = () => {
                 Clear Filter
               </Button>
             )}
-            
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleDownloadPDF}
-              className="mt-5 ml-auto flex items-center gap-2"
-            >
-              <FileDown className="h-4 w-4" /> Download PDF
-            </Button>
           </div>
         </CardContent>
       </Card>
